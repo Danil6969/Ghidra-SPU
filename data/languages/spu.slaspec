@@ -460,6 +460,7 @@ define pcodeop insertind;
 }
 
 
+
 #
 ## Integer and Logical Instructions
 #
@@ -610,61 +611,69 @@ define pcodeop insertind;
 	RR_RT[96,32] = zext((RR_RB[96,32] > RR_RA[96,32]) || ((RR_RT[96,32] & 1) != 0) && (RR_RB[96,32] == RR_RA[96,32]));
 }
 
-define pcodeop __spu_mpy;
-
 # mpy rt,ra,rb
 :mpy RR_RT,RR_RA,RR_RB is RR_OP=964 & RR_RT & RR_RA & RR_RB
 {
-	RR_RT = __spu_mpy(RR_RA, RR_RB);
+	RR_RT[0,32] = ((RR_RA[0,32] << 16) s>> 16) * ((RR_RB[0,32] << 16) s>> 16);
+	RR_RT[32,32] = ((RR_RA[32,32] << 16) s>> 16) * ((RR_RB[32,32] << 16) s>> 16);
+	RR_RT[64,32] = ((RR_RA[64,32] << 16) s>> 16) * ((RR_RB[64,32] << 16) s>> 16);
+	RR_RT[96,32] = ((RR_RA[96,32] << 16) s>> 16) * ((RR_RB[96,32] << 16) s>> 16);
 }
-
-define pcodeop __spu_mpyu;
 
 # mpyu rt,ra,rb
 :mpyu RR_RT,RR_RA,RR_RB is RR_OP=972 & RR_RT & RR_RA & RR_RB
 {
-	RR_RT = __spu_mpyu(RR_RA, RR_RB);
+	RR_RT[0,32] = (RR_RA[0,32] & 0xFFFF) * (RR_RB[0,32] & 0xFFFF);
+	RR_RT[32,32] = (RR_RA[32,32] & 0xFFFF) * (RR_RB[32,32] & 0xFFFF);
+	RR_RT[64,32] = (RR_RA[64,32] & 0xFFFF) * (RR_RB[64,32] & 0xFFFF);
+	RR_RT[96,32] = (RR_RA[96,32] & 0xFFFF) * (RR_RB[96,32] & 0xFFFF);
 }
-
-define pcodeop __spu_mpyi;
 
 # mpyi rt,ra,value
 :mpyi RI10_RT,RI10_RA,RI10_I10 is RI10_OP=116 & RI10_RT & RI10_RA & RI10_I10
 {
-	RI10_RT = __spu_mpyi(RI10_RA, RI10_I10:4);
+	t = RI10_I10:4;
+	RI10_RT[0,32] = ((RI10_RA[0,32] << 16) s>> 16) * t;
+	RI10_RT[32,32] = ((RI10_RA[32,32] << 16) s>> 16) * t;
+	RI10_RT[64,32] = ((RI10_RA[64,32] << 16) s>> 16) * t;
+	RI10_RT[96,32] = ((RI10_RA[96,32] << 16) s>> 16) * t;
 }
-
-define pcodeop __spu_mpyui;
 
 # mpyui rt,ra,value
 :mpyui RI10_RT,RI10_RA,RI10_I10 is RI10_OP=117 & RI10_RT & RI10_RA & RI10_I10
 {
-	RI10_RT = __spu_mpyui(RI10_RA, RI10_I10:4);
+	t = (RI10_I10:4) & 0xFFFF;
+	RI10_RT[0,32] = (RI10_RA[0,32] & 0xFFFF) * t;
+	RI10_RT[32,32] = (RI10_RA[32,32] & 0xFFFF) * t;
+	RI10_RT[64,32] = (RI10_RA[64,32] & 0xFFFF) * t;
+	RI10_RT[96,32] = (RI10_RA[96,32] & 0xFFFF) * t;
 }
-
-define pcodeop __spu_mpya;
 
 # mpya rt,ra,rb,rc
 :mpya RRR_RT,RRR_RA,RRR_RB,RRR_RC is RRR_OP=12 & RRR_RT & RRR_RB & RRR_RA & RRR_RC
 {
-	RRR_RT = __spu_mpya(RRR_RA, RRR_RB, RRR_RC);
+	RRR_RT[0,32] = ((RRR_RA[0,32] << 16) s>> 16) * ((RRR_RB[0,32] << 16) s>> 16) + RRR_RC[0,32];
+	RRR_RT[32,32] = ((RRR_RA[32,32] << 16) s>> 16) * ((RRR_RB[32,32] << 16) s>> 16) + RRR_RC[32,32];
+	RRR_RT[64,32] = ((RRR_RA[64,32] << 16) s>> 16) * ((RRR_RB[64,32] << 16) s>> 16) + RRR_RC[64,32];
+	RRR_RT[96,32] = ((RRR_RA[96,32] << 16) s>> 16) * ((RRR_RB[96,32] << 16) s>> 16) + RRR_RC[96,32];
 }
 
 # mpyh rt,ra,rb
 :mpyh RR_RT,RR_RA,RR_RB is RR_OP=965 & RR_RT & RR_RA & RR_RB
 {
-	RR_RT[0,32] = (RR_RA[0,32] >> 16) * (RR_RB[0,32] & 0xFFFF);
-	RR_RT[32,32] = (RR_RA[32,32] >> 16) * (RR_RB[32,32] & 0xFFFF);
-	RR_RT[64,32] = (RR_RA[64,32] >> 16) * (RR_RB[64,32] & 0xFFFF);
-	RR_RT[96,32] = (RR_RA[96,32] >> 16) * (RR_RB[96,32] & 0xFFFF);
+	RR_RT[0,32] = ((RR_RA[0,32] >> 16) * (RR_RB[0,32] & 0xFFFF)) << 16;
+	RR_RT[32,32] = ((RR_RA[32,32] >> 16) * (RR_RB[32,32] & 0xFFFF)) << 16;
+	RR_RT[64,32] = ((RR_RA[64,32] >> 16) * (RR_RB[64,32] & 0xFFFF)) << 16;
+	RR_RT[96,32] = ((RR_RA[96,32] >> 16) * (RR_RB[96,32] & 0xFFFF)) << 16;
 }
-
-define pcodeop __spu_mpys;
 
 # mpys rt,ra,rb
 :mpys RR_RT,RR_RA,RR_RB is RR_OP=967 & RR_RT & RR_RA & RR_RB
 {
-	RR_RT = __spu_mpys(RR_RA, RR_RB);
+	RR_RT[0,32] = (((RR_RA[0,32] << 16) s>> 16) * ((RR_RB[0,32] << 16) s>> 16)) s>> 16;
+	RR_RT[32,32] = (((RR_RA[32,32] << 16) s>> 16) * ((RR_RB[32,32] << 16) s>> 16)) s>> 16;
+	RR_RT[64,32] = (((RR_RA[64,32] << 16) s>> 16) * ((RR_RB[64,32] << 16) s>> 16)) s>> 16;
+	RR_RT[96,32] = (((RR_RA[96,32] << 16) s>> 16) * ((RR_RB[96,32] << 16) s>> 16)) s>> 16;
 }
 
 define pcodeop __spu_mpyhh;
@@ -672,6 +681,7 @@ define pcodeop __spu_mpyhh;
 # mpyhh rt,ra,rb
 :mpyhh RR_RT,RR_RA,RR_RB is RR_OP=966 & RR_RT & RR_RA & RR_RB
 {
+	#RR_RT = __spu_mpyhh(RR_RA, RR_RB);
 	RR_RT = __spu_mpyhh(RR_RA, RR_RB);
 }
 
@@ -810,76 +820,78 @@ define pcodeop __spu_sumb;
 # xsbh rt,ra
 :xsbh RR_RT,RR_RA is RR_OP=694 & RR_RB=0 & RR_RA & RR_RT
 {
-	RR_RT[112,16] = sext(RR_RA[112,8]);
-	RR_RT[96,16] = sext(RR_RA[96,8]);
-	RR_RT[80,16] = sext(RR_RA[80,8]);
-	RR_RT[64,16] = sext(RR_RA[64,8]);
-	RR_RT[48,16] = sext(RR_RA[48,8]);
-	RR_RT[32,16] = sext(RR_RA[32,8]);
-	RR_RT[16,16] = sext(RR_RA[16,8]);
 	RR_RT[0,16] = sext(RR_RA[0,8]);
+	RR_RT[16,16] = sext(RR_RA[16,8]);
+	RR_RT[32,16] = sext(RR_RA[32,8]);
+	RR_RT[48,16] = sext(RR_RA[48,8]);
+	RR_RT[64,16] = sext(RR_RA[64,8]);
+	RR_RT[80,16] = sext(RR_RA[80,8]);
+	RR_RT[96,16] = sext(RR_RA[96,8]);
+	RR_RT[112,16] = sext(RR_RA[112,8]);
 }
 
 # xshw rt,ra
 :xshw RR_RT,RR_RA is RR_OP=686 & RR_RB=0 & RR_RA & RR_RT
 {
-	RR_RT[96,32] = sext(RR_RA[96,16]);
-	RR_RT[64,32] = sext(RR_RA[64,16]);
-	RR_RT[32,32] = sext(RR_RA[32,16]);
 	RR_RT[0,32] = sext(RR_RA[0,16]);
+	RR_RT[32,32] = sext(RR_RA[32,16]);
+	RR_RT[64,32] = sext(RR_RA[64,16]);
+	RR_RT[96,32] = sext(RR_RA[96,16]);
 }
 
 # xswd rt,ra
 :xswd RR_RT,RR_RA is RR_OP=678 & RR_RB=0 & RR_RA & RR_RT
 {
-	RR_RT[64,64] = sext(RR_RA[64,32]);
 	RR_RT[0,64] = sext(RR_RA[0,32]);
+	RR_RT[64,64] = sext(RR_RA[64,32]);
 }
 
 # and rt,ra,rb
 :and RR_RT,RR_RA,RR_RB is RR_OP=193 & RR_RB & RR_RA & RR_RT
 {
-	RR_RT[96,32] = RR_RA[96,32] & RR_RB[96,32];
-	RR_RT[64,32] = RR_RA[64,32] & RR_RB[64,32];
-	RR_RT[32,32] = RR_RA[32,32] & RR_RB[32,32];
 	RR_RT[0,32] = RR_RA[0,32] & RR_RB[0,32];
+	RR_RT[32,32] = RR_RA[32,32] & RR_RB[32,32];
+	RR_RT[64,32] = RR_RA[64,32] & RR_RB[64,32];
+	RR_RT[96,32] = RR_RA[96,32] & RR_RB[96,32];
 }
 
 # andc rt,ra,rb
 :andc RR_RT,RR_RA,RR_RB is RR_OP=705 & RR_RB & RR_RA & RR_RT
 {
-	RR_RT = RR_RA & (~RR_RB);
+	RR_RT[0,32] = RR_RA[0,32] & (~RR_RB[0,32]);
+	RR_RT[32,32] = RR_RA[32,32] & (~RR_RB[32,32]);
+	RR_RT[64,32] = RR_RA[64,32] & (~RR_RB[64,32]);
+	RR_RT[96,32] = RR_RA[96,32] & (~RR_RB[96,32]);
 }
 
 # andbi rt,ra,value
 :andbi RI10_RT,RI10_RA,RI10_I10 is RI10_OP=22 & RI10_RT & RI10_RA & RI10_I10
 {
-	b:1 = RI10_I10 & 0xFF;
-	bbbb:4 = 0;
-	bbbb[24,8] = b;
-	bbbb[16,8] = b;
-	bbbb[8,8] = b;
-	bbbb[0,8] = b;
-	RI10_RT[96,32] = RI10_RA[96,32] & bbbb;
-	RI10_RT[64,32] = RI10_RA[64,32] & bbbb;
-	RI10_RT[32,32] = RI10_RA[32,32] & bbbb;
+	b = RI10_I10:1;
+	bbbb:4 = zext(b);
+	bbbb = bbbb << 8 | bbbb;
+	bbbb = bbbb << 16 | bbbb;
 	RI10_RT[0,32] = RI10_RA[0,32] & bbbb;
+	RI10_RT[32,32] = RI10_RA[32,32] & bbbb;
+	RI10_RT[64,32] = RI10_RA[64,32] & bbbb;
+	RI10_RT[96,32] = RI10_RA[96,32] & bbbb;
 }
 
 # andhi rt,ra,value
 :andhi RI10_RT,RI10_RA,RI10_I10 is RI10_OP=21 & RI10_RT & RI10_RA & RI10_I10
 {
-	RI10_RT = (RI10_RA & RI10_I10) & 0xFFFF;
+	t = RI10_I10:2;
+	RI10_RT = RI10_RA & RI10_I10;
 }
 
 # andi rt,ra,value
 :andi RI10_RT,RI10_RA,RI10_I10 is RI10_OP=20 & RI10_RT & RI10_RA & RI10_I10
 {
-	#if (RI10_I10:4 == 0xff) goto <zext_byte>;
-	RI10_RT = (RI10_RA & RI10_I10) & 0xFFFFFFFF;
-	#goto inst_next;
-	#<zext_byte>
-	#RI10_I10 = zext(RI10_RA:1);
+	t = RI10_I10:4;
+	RI10_RT[0,32] = RI10_RA[0,32] & t;
+	RI10_RT[32,32] = RI10_RA[32,32] & t;
+	RI10_RT[64,32] = RI10_RA[64,32] & t;
+	RI10_RT[96,32] = RI10_RA[96,32] & t;
 }
 
 # or rt,ra,rb
@@ -897,12 +909,10 @@ define pcodeop __spu_sumb;
 # orbi rt,ra,value
 :orbi RI10_RT,RI10_RA,RI10_I10 is RI10_OP=6 & RI10_RT & RI10_RA & RI10_I10
 {
-	b:1 = RI10_I10 & 0xFF;
-	bbbb:4 = 0;
-	bbbb[0,8] = b;
-	bbbb[8,8] = b;
-	bbbb[16,8] = b;
-	bbbb[24,8] = b;
+	b = RI10_I10:1;
+	bbbb:4 = zext(b);
+	bbbb = bbbb << 8 | bbbb;
+	bbbb = bbbb << 16 | bbbb;
 	RI10_RT[0,32] = RI10_RA[0,32] | bbbb;
 	RI10_RT[32,32] = RI10_RA[32,32] | bbbb;
 	RI10_RT[64,32] = RI10_RA[64,32] | bbbb;
@@ -918,7 +928,6 @@ define pcodeop __spu_sumb;
 # lr rt,ra
 :lr RI10_RT,RI10_RA is RI10_OP=4 & RI10_RT & RI10_RA & RI10_I10=0
 {
-	#RI10_RT = RI10_RA & 0xFFFFFFFF;
 	RI10_RT = RI10_RA;
 }
 
@@ -1510,8 +1519,6 @@ define pcodeop __spu_clgthi;
 	RI10_RT = __spu_clgthi(RI10_RA, RI10_I10:4);
 }
 
-define pcodeop __spu_clgt;
-
 # clgt rt,ra,rb
 :clgt RR_RT,RR_RA,RR_RB is RR_OP=704 & RR_RT & RR_RA & RR_RB
 {
@@ -1521,16 +1528,13 @@ define pcodeop __spu_clgt;
 	RR_RT[96,32] = zext(RR_RA[96,32] > RR_RB[96,32]) * 0xFFFFFFFF:4;
 }
 
-define pcodeop __spu_clgti;
-
 # clgti rt,ra,value
 :clgti RI10_RT,RI10_RA,RI10_I10 is RI10_OP=92 & RI10_RT & RI10_RA & RI10_I10
 {
-	if (RI10_RA > RI10_I10) goto <true>;
-	RI10_RT = 0;
-	goto inst_next;
-	<true>
-	RI10_RT = 0xFFFFFFFF;
+	RI10_RT[0,32] = zext(RI10_RA[0,32] > RI10_I10:4) * 0xFFFFFFFF:4;
+	RI10_RT[32,32] = zext(RI10_RA[32,32] > RI10_I10:4) * 0xFFFFFFFF:4;
+	RI10_RT[64,32] = zext(RI10_RA[64,32] > RI10_I10:4) * 0xFFFFFFFF:4;
+	RI10_RT[96,32] = zext(RI10_RA[96,32] > RI10_I10:4) * 0xFFFFFFFF:4;
 }
 
 # br symbol
@@ -1588,8 +1592,6 @@ define pcodeop __spu_bisled;
 	__spu_bisled(RI7_RT, RI7_RA:4);
 }
 
-define pcodeop __spu_bisl;
-
 # bisl rt,ra
 :bisl RI7_RT,RI7_RA is RI7_OP=425 & RI7_RT & RI7_RA
 {
@@ -1600,23 +1602,21 @@ define pcodeop __spu_bisl;
 # brnz rt,symbol
 :brnz RI16_RT,targetAddress is RI16_OP=66 & RI16_I16 & RI16_RT & targetAddress
 {
-    if (RI16_RT != 0)
+    if (RI16_RT[96,32] != 0)
         goto targetAddress;
 }
 
 # brz rt,symbol
 :brz RI16_RT,targetAddress is RI16_OP=64 & RI16_I16 & RI16_RT & targetAddress
 {
-    if (RI16_RT == 0)
+    if (RI16_RT[96,32] == 0)
         goto targetAddress;
 }
-
-define pcodeop __spu_brhnz;
 
 # brhnz rt,symbol
 :brhnz RI16_RT,targetAddress is RI16_OP=70 & RI16_I16 & RI16_RT & targetAddress
 {
-    if ((RI16_RT & 0xFFFF) != 0)
+    if ((RI16_RT[96,32] & 0xFFFF) != 0)
         goto targetAddress;
 }
 
@@ -1625,7 +1625,7 @@ define pcodeop __spu_brhz;
 # brhz rt,symbol
 :brhz RI16_RT,targetAddress is RI16_OP=68 & RI16_I16 & RI16_RT & targetAddress
 {
-    if ((RI16_RT & 0xFFFF) == 0)
+    if ((RI16_RT[96,32] & 0xFFFF) == 0)
         goto targetAddress;
 }
 
@@ -1928,6 +1928,8 @@ define pcodeop __spu_dsync;
 #mfspr
 
 #mtspr
+
+
 
 #
 ## Channel Instructions
