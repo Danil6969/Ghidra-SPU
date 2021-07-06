@@ -91,6 +91,7 @@ define register offset=0 size=4 [
 ];
 
 define register offset=0x1000 size=4 pc;
+define register offset=0x1004 size=4 srr0;
 
 define register offset=0x1008 size=16 [ rTmp1 ];
 
@@ -184,10 +185,10 @@ attach variables [
 
 # we know that the LSA must be 16 bytes aligned but it seems that no &0xFFFFFFF0 is required
 LSA: symbol(RI10_RA)	is RI10_I10 & RI10_RA [ symbol = RI10_I10 << 4; ] { tmp = symbol:4 + RI10_RA(12); export tmp; }
-targetAddress: symbol   is RI16_I16 [ symbol = inst_start + (RI16_I16 << 2); ] { export *:4 symbol; }
-absoluteAddress: symbol   is RI16_I16 [ symbol = (RI16_I16 << 2); ] { export *:4 symbol; }
-LSAabsolute: symbol  is RI16_I16 [ symbol = (RI16_I16 << 2) & 0x3FFF0; ] { tmp:4 = symbol:4; export tmp; }
-#loadAddress: symbol     is RI18_I18 [ symbol = RI18_I18*1; ] { export *:8 symbol; }
+targetAddress: symbol	is RI16_I16 [ symbol = inst_start + (RI16_I16 << 2); ] { export *:4 symbol; }
+absoluteAddress: symbol	is RI16_I16 [ symbol = (RI16_I16 << 2); ] { export *:4 symbol; }
+LSAabsolute: symbol		is RI16_I16 [ symbol = (RI16_I16 << 2) & 0x3FFF0; ] { tmp:4 = symbol:4; export tmp; }
+#loadAddress: symbol	is RI18_I18 [ symbol = RI18_I18*1; ] { export *:8 symbol; }
 
 #
 ## Memory Load/Store Instructions
@@ -256,7 +257,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RI7_RT = insertind(RI7_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RI7_RT = insertind(RI7_RT,0x03:1,15 - t);
 }
@@ -270,7 +272,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RR_RT = insertind(RR_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RR_RT = insertind(RR_RT,0x03:1,15 - t);
 }
@@ -284,7 +287,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RI7_RT = insertind(RI7_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RI7_RT = insertind(RI7_RT,0x0203:2,15 - t);
 }
@@ -298,7 +302,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RR_RT = insertind(RR_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RR_RT = insertind(RR_RT,0x0203:2,15 - t);
 }
@@ -312,7 +317,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RI7_RT = insertind(RI7_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RI7_RT = insertind(RI7_RT,0x00010203:4,15 - t);
 }
@@ -326,7 +332,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RR_RT = insertind(RR_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RR_RT = insertind(RR_RT,0x00010203:4,15 - t);
 }
@@ -340,7 +347,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RI7_RT = insertind(RI7_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RI7_RT = insertind(RI7_RT,0x0001020304050607:8,15 - t);
 }
@@ -354,7 +362,8 @@ define pcodeop insertind;
 	<loop>
 	if (i >= 16) goto <loop_end>;
 		RR_RT = insertind(RR_RT,i + 0x10,15 - i);
-	goto <loop>;
+		i = i + 1;
+		goto <loop>;
 	<loop_end>
 	RR_RT = insertind(RR_RT,0x0001020304050607:8,15 - t);
 }
@@ -934,7 +943,6 @@ define pcodeop __spu_sumb;
 # ori rt,ra,value
 :ori RI10_RT,RI10_RA,RI10_I10 is RI10_OP=4 & RI10_RT & RI10_RA & RI10_I10
 {
-	#RI10_RT = (RI10_RA | RI10_I10) & 0xFFFFFFFF;
 	RI10_RT = RI10_RA | RI10_I10;
 }
 
@@ -1011,22 +1019,22 @@ define pcodeop extractind;
 			if ((b >> 6 & 1) == 0) goto <skipvars>; # Already assigned c to 0x00
 				if ((b >> 5 & 1) == 0) goto <skip_0x80>;
 					c = 0x80;
-				goto <skipvars>;
+					goto <skipvars>;
 				<skip_0x80>
 					c = 0xFF;
-				goto <skipvars>;
+					goto <skipvars>;
 		<skipconsts>
 		d = b & 0xF;
 		if ((b >> 4 & 1) != 0) goto <skipfirst>;
 			c = extractind(RRR_RA,15 - d);
-		goto <skipsecond>;
+			goto <skipsecond>;
 		<skipfirst>
 			c = extractind(RRR_RB,15 - d);
 		<skipsecond>
 		<skipvars>
 		rTmp1 = insertind(rTmp1,c,15 - i);
 		i = i + 1;
-	goto <loop>;
+		goto <loop>;
 	<loop_end>
 	RRR_RT = rTmp1;
 }
@@ -1414,10 +1422,10 @@ define pcodeop __spu_ceq;
 # ceq rt,ra,rb
 :ceq RR_RT,RR_RA,RR_RB is RR_OP=960 & RR_RT & RR_RA & RR_RB
 {
-	RR_RT[96,32] = zext(RR_RA[96,32] == RR_RB[96,32]) * 0xFFFFFFFF:4;
-	RR_RT[64,32] = zext(RR_RA[64,32] == RR_RB[64,32]) * 0xFFFFFFFF:4;
-	RR_RT[32,32] = zext(RR_RA[32,32] == RR_RB[32,32]) * 0xFFFFFFFF:4;
 	RR_RT[0,32] = zext(RR_RA[0,32] == RR_RB[0,32]) * 0xFFFFFFFF:4;
+	RR_RT[32,32] = zext(RR_RA[32,32] == RR_RB[32,32]) * 0xFFFFFFFF:4;
+	RR_RT[64,32] = zext(RR_RA[64,32] == RR_RB[64,32]) * 0xFFFFFFFF:4;
+	RR_RT[96,32] = zext(RR_RA[96,32] == RR_RB[96,32]) * 0xFFFFFFFF:4;
 }
 
 define pcodeop __spu_ceqi;
@@ -1485,14 +1493,14 @@ define pcodeop __spu_cgthi;
 # clgtb rt,ra,rb
 :clgtb RR_RT,RR_RA,RR_RB is RR_OP=720 & RR_RT & RR_RA & RR_RB
 {
-	RR_RT[56,8] = (RR_RA[56,8] > RR_RB[56,8]) * 0xFF;
-	RR_RT[48,8] = (RR_RA[48,8] > RR_RB[48,8]) * 0xFF;
-	RR_RT[40,8] = (RR_RA[40,8] > RR_RB[40,8]) * 0xFF;
-	RR_RT[32,8] = (RR_RA[32,8] > RR_RB[32,8]) * 0xFF;
-	RR_RT[24,8] = (RR_RA[24,8] > RR_RB[24,8]) * 0xFF;
-	RR_RT[16,8] = (RR_RA[16,8] > RR_RB[16,8]) * 0xFF;
-	RR_RT[8,8] = (RR_RA[8,8] > RR_RB[8,8]) * 0xFF;
 	RR_RT[0,8] = (RR_RA[0,8] > RR_RB[0,8]) * 0xFF;
+	RR_RT[8,8] = (RR_RA[8,8] > RR_RB[8,8]) * 0xFF;
+	RR_RT[16,8] = (RR_RA[16,8] > RR_RB[16,8]) * 0xFF;
+	RR_RT[24,8] = (RR_RA[24,8] > RR_RB[24,8]) * 0xFF;
+	RR_RT[32,8] = (RR_RA[32,8] > RR_RB[32,8]) * 0xFF;
+	RR_RT[40,8] = (RR_RA[40,8] > RR_RB[40,8]) * 0xFF;
+	RR_RT[48,8] = (RR_RA[48,8] > RR_RB[48,8]) * 0xFF;
+	RR_RT[56,8] = (RR_RA[56,8] > RR_RB[56,8]) * 0xFF;
 }
 
 define pcodeop __spu_clgtbi;
@@ -1544,9 +1552,9 @@ define pcodeop __spu_clgthi;
 }
 
 # bra symbol
-:bra targetAddress is RI16_OP=96 & RI16_I16 & RI16_RT=0 & targetAddress
+:bra absoluteAddress is RI16_OP=96 & RI16_I16 & RI16_RT=0 & absoluteAddress
 {
-	goto targetAddress;
+	goto absoluteAddress;
 }
 
 # brsl rt,symbol
@@ -1566,35 +1574,40 @@ define pcodeop __spu_clgthi;
 # bi lr
 :bi RR_RA is RR_OP=424 & RR_RB & RR_RA & RR_RA=0 & RR_RT=0
 {
-    return [RR_RA[96,32]];
+	return [RR_RA[96,32]];
 }
 
 # bi ra
 :bi RR_RA is RR_OP=424 & RR_RB & RR_RA & RR_RT=0
 {
-    goto [RR_RA[96,32]];
+	goto [RR_RA[96,32]];
 }
-
-define pcodeop __spu_iret;
 
 # iret ra
 :iret RR_RA is RR_OP=600 & RR_RB & RR_RA & RR_RT=0
 {
-	__spu_iret(RR_RA);
+	return [srr0];
 }
 
-define pcodeop __spu_bisled;
+define pcodeop ReadChannelCount;
 
 # bisled rt,ra
 :bisled RI7_RT,RI7_RA is RI7_OP=427 & RI7_RT & RI7_RA
 {
-	
-	__spu_bisled(RI7_RT, RI7_RA:4);
+	RI7_RT[0,32] = 0;
+	RI7_RT[32,32] = 0;
+	RI7_RT[64,32] = 0;
+	RI7_RT[96,32] = inst_next;
+	if (ReadChannelCount(0:4) == 0:4) goto inst_next;
+	call [RI7_RA[96,32]];
 }
 
 # bisl rt,ra
 :bisl RI7_RT,RI7_RA is RI7_OP=425 & RI7_RT & RI7_RA
 {
+	RI7_RT[0,32] = 0;
+	RI7_RT[32,32] = 0;
+	RI7_RT[64,32] = 0;
 	RI7_RT[96,32] = inst_next;
 	call [RI7_RA[96,32]];
 }
@@ -1602,89 +1615,84 @@ define pcodeop __spu_bisled;
 # brnz rt,symbol
 :brnz RI16_RT,targetAddress is RI16_OP=66 & RI16_I16 & RI16_RT & targetAddress
 {
-    if (RI16_RT[96,32] != 0)
-        goto targetAddress;
+	if (RI16_RT[96,32] != 0) goto targetAddress;
 }
 
 # brz rt,symbol
 :brz RI16_RT,targetAddress is RI16_OP=64 & RI16_I16 & RI16_RT & targetAddress
 {
-    if (RI16_RT[96,32] == 0)
-        goto targetAddress;
+	if (RI16_RT[96,32] == 0) goto targetAddress;
 }
 
 # brhnz rt,symbol
 :brhnz RI16_RT,targetAddress is RI16_OP=70 & RI16_I16 & RI16_RT & targetAddress
 {
-    if ((RI16_RT[96,32] & 0xFFFF) != 0)
-        goto targetAddress;
+	if ((RI16_RT[96,32] & 0xFFFF) != 0) goto targetAddress;
 }
-
-define pcodeop __spu_brhz;
 
 # brhz rt,symbol
 :brhz RI16_RT,targetAddress is RI16_OP=68 & RI16_I16 & RI16_RT & targetAddress
 {
-    if ((RI16_RT[96,32] & 0xFFFF) == 0)
-        goto targetAddress;
+	if ((RI16_RT[96,32] & 0xFFFF) == 0) goto targetAddress;
 }
 
 #TODO: handle interrupt enable/disable flags
+
 # biz rt,lr
 :biz RR_RT,RR_RA is RR_OP=296 & RR_RB & RR_RA & RR_RA=0 & RR_RT
 {
-    if (RR_RT != 0) goto inst_next;
-    return [RR_RA];
+	if (RR_RT[96,32] != 0) goto inst_next;
+	return [RR_RA];
 }
 
 
 # biz rt,ra
 :biz RR_RT,RR_RA is RR_OP=296 & RR_RB & RR_RA & RR_RT
 {
-    if (RR_RT != 0) goto inst_next;
-    goto [RR_RA];
+	if (RR_RT[96,32] != 0) goto inst_next;
+	goto [RR_RA];
 }
 
 # binz rt,lr
 :binz RR_RT,RR_RA is RR_OP=297 & RR_RB & RR_RA & RR_RA=0 & RR_RT
 {
-    if (RR_RT == 0) goto inst_next;
-    return [RR_RA];
+	if (RR_RT[96,32] == 0) goto inst_next;
+	return [RR_RA];
 }
 
 # binz rt,ra
 :binz RR_RT,RR_RA is RR_OP=297 & RR_RB & RR_RA & RR_RT
 {
-    if (RR_RT == 0) goto inst_next;
-    goto [RR_RA];
+	if (RR_RT[96,32] == 0) goto inst_next;
+	goto [RR_RA];
 }
 
 # bihz rt,lr
 :bihz RR_RT,RR_RA is RR_OP=298 & RR_RB & RR_RA & RR_RA=0 & RR_RT
 {
-    if ((RR_RT:2) != 0) goto inst_next;
-    return [RR_RA];
+	if ((RR_RT[96,32] & 0xFFFF) != 0) goto inst_next;
+	return [RR_RA];
 }
 
 # bihz rt,ra
 :bihz RR_RT,RR_RA is RR_OP=298 & RR_RB & RR_RA & RR_RT
 {
-    if ((RR_RT:2) != 0) goto inst_next;
-    goto [RR_RA];
+	if ((RR_RT[96,32] & 0xFFFF) != 0) goto inst_next;
+	goto [RR_RA];
 }
 
 # bihnz rt,lr
 :bihnz RR_RT,RR_RA is RR_OP=299 & RR_RB & RR_RA & RR_RA=0 & RR_RT
 {
-    if ((RR_RT:2) == 0) goto inst_next;
-    return [RR_RA];
+	if ((RR_RT[96,32] & 0xFFFF) == 0) goto inst_next;
+	return [RR_RA];
 }
 
 # bihnz rt,ra
 :bihnz RR_RT,RR_RA is RR_OP=299 & RR_RB & RR_RA & RR_RT
 {
-    if ((RR_RT:2) == 0) goto inst_next;
-    goto [RR_RA];
+	if ((RR_RT[96,32] & 0xFFFF) == 0) goto inst_next;
+	goto [RR_RA];
 }
 
 
@@ -1900,14 +1908,10 @@ define pcodeop __spu_stopd;
 }
 
 # lnop
-:lnop is RR_OP=1 & RR_RB=0 & RR_RA=0 & RR_RT=0
-{
-}
+:lnop is RR_OP=1 & RR_RB=0 & RR_RA=0 & RR_RT=0 {}
 
 # nop
-:nop RR_RT is RR_OP=513 & RR_RT
-{
-}
+:nop RR_RT is RR_OP=513 & RR_RT {}
 
 define pcodeop __spu_sync;
 
@@ -1940,21 +1944,22 @@ define pcodeop ReadChannelData;
 #rdch rt,ca
 :rdch CH_RT,CH_CA is CH_OP=13 & CH_CA & CH_RT
 {
-    CH_RT = ReadChannelData(CH_CA:4);
+	CH_RT = ReadChannelData(CH_CA:4);
 }
-
-define pcodeop ReadChannelCount;
 
 #rchcnt rt,ca
 :rchcnt CH_RT,CH_CA is CH_OP=15 & CH_CA & CH_RT
 {
-    CH_RT[96,32] = ReadChannelCount(CH_CA:4);
+	CH_RT[0,32] = 0;
+	CH_RT[32,32] = 0;
+	CH_RT[64,32] = 0;
+	CH_RT[96,32] = ReadChannelCount(CH_CA:4);
 }
 
 define pcodeop WriteChannelData;
 
 #wrch rt,ca
-:wrch CH_RT,CH_CA is CH_OP=269 & CH_CA & CH_RT
+:wrch CH_CA,CH_RT is CH_OP=269 & CH_CA & CH_RT
 {
-    WriteChannelData(CH_RT, CH_CA:4);
+	WriteChannelData(CH_RT, CH_CA:4);
 }
